@@ -1,7 +1,14 @@
 package main
 
 import (
+	"fmt"
+	"log"
+	"os"
+	"time"
 	"github.com/gofiber/fiber/v2"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type Book struct {
@@ -12,7 +19,48 @@ type Book struct {
 
 var books []Book
 
+const (
+	host     = "localhost"
+	port     = 5432
+	user     = "myuser"
+	password = "mypassword"
+	dbname   = "mydatabase"
+)
+
 func main() {
+	dsn := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
+
+	newLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+		logger.Config{
+			SlowThreshold: time.Second, // Slow SQL threshold
+			LogLevel:      logger.Info, // Log level
+			Colorful:      true,        // Enable color
+		},
+	)
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+    Logger: newLogger,
+  })
+
+	if err != nil {
+		panic("Failed to connect database")
+	}
+
+	db.AutoMigrate(&Books{})
+	fmt.Println("Migration successful!")
+
+  newBook := Books{
+    Name: "Noon",
+    Author: "NoonThitisan",
+    Description: "test",
+    Price: 250,
+  }
+
+  createBooks(db, &newBook)
+
 	app := fiber.New()
 
 	books = append(books, Book{ID: 1, Title: "Java", Author: "Noon"})
@@ -24,23 +72,22 @@ func main() {
 	app.Put("/books/:id", updateBook)
 	app.Delete("books/:id", deleteBook)
 
-  app.Post("/upload", uploadFile)
-
+	app.Post("/upload", uploadFile)
 	app.Listen(":8080")
 }
 
 func uploadFile(c *fiber.Ctx) error {
-  file, err := c.FormFile("image")
+	file, err := c.FormFile("image")
 
-  if err != nil {
-    return c.Status(fiber.ErrBadRequest.Code).SendString(err.Error())
-  }
+	if err != nil {
+		return c.Status(fiber.ErrBadRequest.Code).SendString(err.Error())
+	}
 
-  err = c.SaveFile(file, "./uploads/" + file.Filename)
+	err = c.SaveFile(file, "./uploads/"+file.Filename)
 
-  if err != nil {
-    return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
-  }
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+	}
 
-  return c.SendString("File upload complete!")
+	return c.SendString("File upload complete!")
 }
