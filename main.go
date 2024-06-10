@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"os"
-	"time"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"log"
+	"os"
+	"time"
 )
 
 type Book struct {
@@ -42,8 +42,8 @@ func main() {
 	)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-    Logger: newLogger,
-  })
+		Logger: newLogger,
+	})
 
 	if err != nil {
 		panic("Failed to connect database")
@@ -52,14 +52,14 @@ func main() {
 	db.AutoMigrate(&Books{})
 	fmt.Println("Migration successful!")
 
-  newBook := Books{
-    Name: "Noon",
-    Author: "NoonThitisan",
-    Description: "test",
-    Price: 250,
-  }
+	newBook := Books{
+		Name:        "Noon",
+		Author:      "NoonThitisan",
+		Description: "test",
+		Price:       250,
+	}
 
-  createBooks(db, &newBook)
+	createBooks(db, &newBook)
 
 	app := fiber.New()
 
@@ -70,6 +70,7 @@ func main() {
 	app.Get("/books/:id", getBook)
 	app.Post("/books", createBook)
 	app.Put("/books/:id", updateBook)
+	//Hello
 	app.Delete("books/:id", deleteBook)
 
 	app.Post("/upload", uploadFile)
